@@ -1,6 +1,17 @@
-from fastapi import Body, FastAPI
+from fastapi import Body, FastAPI, HTTPException
+from pydantic import Field, BaseModel
 
 app = FastAPI()
+
+
+class InfoRequest(BaseModel):
+    FirstName: str = Field(min_length=3)
+    LastName: str = Field(min_length=3)
+    Phone_Number: str = Field(max_length=10)
+    Country_code: str
+    Email: str
+    UseId: int = Field(gt=-1, lt=100)
+
 
 INFO = [
     {'FirstName': 'Pranita', 'LastName': 'Gavali', 'Phone_Number': '8668470672', 'Country_code': '+91',
@@ -15,6 +26,12 @@ INFO = [
      'Email': 'gaurav@gmail.com', 'UseId': '5'},
 
 ]
+
+VALID_COUNTRY_CODES = ["+91", "+1", "+44"]
+
+
+def is_valid_country_code(country_code: str) -> bool:
+    return country_code in VALID_COUNTRY_CODES
 
 
 @app.get("/api-endpoint")
@@ -32,8 +49,11 @@ async def read_country_code_by_query(country_code: str):
 
 
 @app.post("/task1/create_info")
-async def create_book(new_info=Body()):
-    INFO.append(new_info)
+async def create_book(info_request: InfoRequest):
+    if not is_valid_country_code(info_request.Country_code):
+        raise HTTPException(status_code=400, detail="Invalid country code")
+
+    INFO.append(info_request.dict())
 
 
 @app.put("/task1/update_info")
